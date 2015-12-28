@@ -6,7 +6,6 @@ sig
 	val $ : string -> token list -> string * token list
 	val empty : 'a -> 'b list * 'a
 	val || : ('a -> 'b) * ('a -> 'b) -> 'a -> 'b
-	val !! : ('a -> 'b * 'c) -> 'a -> 'b * 'c
 	val -- : ('a -> 'b * 'c) * ('c -> 'd * 'e) -> 'a -> ('b * 'd) * 'e
 	val !-- : ('a -> 'b * 'c) * ('c -> 'd * 'e) -> 'a -> 'd * 'e
 	val --! : ('a -> 'b * 'c) * ('c -> 'd * 'e) -> 'a -> 'b * 'e
@@ -43,9 +42,6 @@ struct
 	
 	fun (ph1 || ph2) (xs) = ph1 xs
 						  handle SyntaxError _ => ph2 xs;
-	
-	fun !! ph (xs) = ph xs
-					 handle SyntaxError msg => raise Fail ("Syntax error: " ^ msg);
 	
 	fun (ph1 -- ph2) (xs) = 
 		let val (h1, t1) = ph1 (xs)

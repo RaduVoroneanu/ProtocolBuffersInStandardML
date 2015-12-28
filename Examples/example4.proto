@@ -1,5 +1,10 @@
 option optimize_for = SPEED;
 
+import "example3.proto";
+
+option optimize_for = SPEED; // some other userless comment
+
+// some other userless comment
 enum A {
 	CASE1 = 0;
 	CASE2 = 1;
@@ -7,8 +12,13 @@ enum A {
 }
 
 message B {
-	optional int32 name1 = 1;
+	optional int32 name1 = 1 [default = 0];
 	required int64 name2 = 2;
+	
+	oneof name3 {
+		int32 name4 = 3;
+		string name5 = 4;
+	}
 }
 
 message C {
@@ -28,4 +38,6 @@ message C {
 	optional D name2 = 2;
 	optional E name3 = 3;
 	optional D.F name4 = 4;
+	
+	
 }

@@ -2,6 +2,15 @@ import "example3.proto";
 
 option optimize_for = SPEED; // some other userless comment
 
+message W.W {}
+message W {
+	message Q {}
+}
+
+message R {
+	optional W.W n = 1;
+}
+
 // some other userless comment
 enum A {
 	CASE1 = 0;
@@ -20,7 +29,7 @@ message B {
 }
 
 message C {
-	message D {
+	message D.Q {
 		message F {
 			optional bool name1 = 1;
 			optional bool name2 = 2;
@@ -33,7 +42,7 @@ message C {
 	}
 	
 	optional string name1 = 1;
-	optional D name2 = 2;
+	optional D.Q name2 = 2;
 	optional E name3 = 3;
-	optional D.F name4 = 4;
+	optional D.Q.F name4 = 4;
 }

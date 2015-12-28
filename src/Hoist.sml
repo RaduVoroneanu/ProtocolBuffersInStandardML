@@ -3,8 +3,7 @@
 	are base on the path from the root message to the nested ones. 
 *)
 fun hoistName (context) (name) =
-	let val s = Substring.string ( Substring.takel (fn x => x <> #".") (Substring.full name))
-		val t = List.find (fn (x,_) => x = s) context
+	let val t = List.find (fn (x,_) => x = name orelse String.isPrefix (x^".") name) context
 	in
 		case t of
 			SOME(_,x) => x ^ name

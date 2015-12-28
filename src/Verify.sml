@@ -23,14 +23,19 @@ fun verifyProgram (_) ([]) = true
 |	verifyProgram (context) (Message(name, fieldList)::xs) =
 	let fun getTags (Variable(_, _, _, i, _)) = [i]
 		|	getTags (OneOf(_, fields)) = List.map (fn (_, _, i) => i) fields
+		|	getTags (_) = []
 		fun getNames (Variable(_, _, n, _, _)) = [n]
 		|	getNames (OneOf(name, fields)) = name :: (List.map (fn (_, n, _) => n) fields)
+		|	getNames (_) = []
 		fun getTypes (Variable(_, t, _, _, _)) = [t]
 		|	getTypes (OneOf(_, fields)) = List.map (fn (t, _, _) => t) fields
+		|	getTypes (_) = []
 		val tags = List.foldr (op@) [] (List.map getTags (fieldList))
 		val names = List.foldr (op@) [] (List.map getNames (fieldList))
 		val types = List.foldr (op@) [] (List.map getTypes (fieldList))
 	in
+		if List.exists (fn x => x = name) context then raise SyntaxError("Duplicate name " ^ name)
+		else
 		if not(isValidMessageName(name)) then raise SyntaxError("Invalid message name " ^ name)
 		else
 		if List.exists (not o isValidMessageTag) tags then raise SyntaxError("Invalid tag in message " ^ name)
@@ -48,6 +53,8 @@ fun verifyProgram (_) ([]) = true
 	let val tags = List.map (fn (_, i) => i) fieldList
 		val names = List.map (fn (n, _) => n) fieldList
 	in
+		if List.exists (fn x => x = name) context then raise SyntaxError("Duplicate name " ^ name)
+		else
 		if not(isValidEnumName(name)) then raise SyntaxError("Invalid enum name " ^ name)
 		else
 		if List.exists (not o isValidEnumTag) tags then raise SyntaxError("Invalid tag in enum " ^ name)

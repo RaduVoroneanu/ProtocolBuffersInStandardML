@@ -15,7 +15,7 @@ message B {
 	
 	oneof name3 {
 		int32 name4 = 3;
-		string name5 = 4;
+		Person name5 = 4;
 	}
 }
 

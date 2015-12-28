@@ -1,0 +1,31 @@
+option optimize_for = SPEED;
+
+enum A {
+	CASE1 = 0;
+	CASE2 = 1;
+	CASE3 = 2;
+}
+
+message B {
+	optional int32 name1 = 1;
+	required int64 name2 = 2;
+}
+
+message C {
+	message D {
+		message F {
+			optional bool name1 = 1;
+			optional bool name2 = 2;
+		}
+		repeated F name1 = 1;
+	}
+	
+	enum E {
+		CASE1 = 1;
+	}
+	
+	optional string name1 = 1;
+	optional D name2 = 2;
+	optional E name3 = 3;
+	optional D.F name4 = 4;
+}

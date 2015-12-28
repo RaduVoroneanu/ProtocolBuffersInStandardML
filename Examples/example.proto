@@ -1,0 +1,10 @@
+enum PhoneType {
+	MOBILE = 0;
+	HOME = 1;
+	WORK = 2;
+}
+
+message PhoneNumber {
+	required string phone = 0;
+	optional PhoneType ptype = 1;
+}

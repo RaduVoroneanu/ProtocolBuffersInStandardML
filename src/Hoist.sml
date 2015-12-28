@@ -1,19 +1,9 @@
-(* The function determines the prefix of the string up to the first '.' *)
-fun firstPoint (s) = 
-	let val c = String.explode s
-		fun iterate ([]) = []
-		|	iterate (#"." :: _) = []
-		|   iterate (x::xs) = x::iterate(xs)
-	in
-		String.implode (iterate c)
-	end;
-	
 (* The function determines using the context, what prefix needs to be added to the name to hoist it.
 	The context parameter is a list of pair of the form (message_name, prefix_to_add). The prefixes
 	are base on the path from the root message to the nested ones. 
 *)
 fun hoistName (context) (name) =
-	let val s = firstPoint(name)
+	let val s = Substring.string ( Substring.takel (fn x => x <> #".") (Substring.full name))
 		val t = List.find (fn (x,_) => x = s) context
 	in
 		case t of
@@ -30,15 +20,20 @@ fun hoistName (context) (name) =
 		will be added at the beginning of this list in postorder (nested elements first then root
 *)
 fun hoistMessage (answer) (prefix) (context) ((name, fieldList)) =
-	let fun isVariable(Variable(_)) = true
-		|	isVariable(_) = false
-		val variableList = List.filter (isVariable) fieldList
-		fun hoistVariable (c) ([]) = []
-		|	hoistVariable (c) (Variable(q, OTHER(w), n, i) :: xs) =
-				Variable(q, OTHER(hoistName c w), n, i) :: (hoistVariable (c) (xs))
-		|	hoistVariable (c) (Variable(w) :: xs) = Variable(w) :: (hoistVariable c (xs))
-		|	hoistVariable (c) (_::xs) = raise SyntaxError("Unexpected message/enum in variable list")
-		fun iterate (c) ([]) = Message(prefix^name, hoistVariable (c) (variableList)) :: answer
+	let fun isHoistable(NestedMessage(_)) = true
+		|	isHoistable(NestedEnum(_)) = true
+		|	isHoistable(_) = false
+		val stableList = List.filter (not o isHoistable) fieldList
+		fun hoistOneOf (c) ([]) = []
+		|	hoistOneOf (c) ((OTHER(w), n, i)::xs) = (OTHER(hoistName c w), n, i) :: (hoistOneOf c (xs))
+		|	hoistOneOf (c) ((t, n, i) :: xs) = (t, n, i) :: (hoistOneOf c (xs))
+		fun hoistStable (c) ([]) = []
+		|	hoistStable (c) (Variable(q, OTHER(w), n, i, d) :: xs) =
+				Variable(q, OTHER(hoistName c w), n, i, d) :: (hoistStable (c) (xs))
+		|	hoistStable (c) (Variable(w) :: xs) = Variable(w) :: (hoistStable c (xs))
+		|	hoistStable (c) (OneOf(name, oneofFieldList) :: xs) = OneOf(name, hoistOneOf c (oneofFieldList)) :: (hoistStable c (xs))
+		|	hoistStable (c) (_::xs) = raise SyntaxError("Unexpected message/enum in variable list")
+		fun iterate (c) ([]) = Message(prefix^name, hoistStable (c) (stableList)) :: answer
 		|	iterate (c) (NestedMessage(n1, l1)::xs) =
 				hoistMessage (iterate ((n1, prefix^name^".")::c) (xs)) (prefix^name^".") (c) (n1, l1)
 		|	iterate (c) (NestedEnum(n1, l1) ::xs) =
@@ -58,8 +53,8 @@ and hoistProgram (_) ([]) = []
 		hoistMessage (hoistProgram ((name, "")::c) (xs)) ("") (c) (name, fieldList)
 |	hoistProgram (c) (Enum(name, fieldList) :: xs) =
 		hoistEnum (hoistProgram ((name, "")::c) (xs)) ("") (c) (name, fieldList)
-|	hoistProgram (c) (o::xs) =
-		o:: (hoistProgram (c) (xs))
+|	hoistProgram (c) (opt::xs) =
+		opt :: (hoistProgram (c) (xs))
 		
 (* The function which implements the full hoisting of the program. It uses the helper function hoistProgram 
 	by providing an initial empty context.*)

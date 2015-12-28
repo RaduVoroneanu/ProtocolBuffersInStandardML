@@ -1,5 +1,3 @@
-option optimize_for = SPEED;
-
 import "example3.proto";
 
 option optimize_for = SPEED; // some other userless comment
@@ -38,6 +36,4 @@ message C {
 	optional D name2 = 2;
 	optional E name3 = 3;
 	optional D.F name4 = 4;
-	
-	
 }

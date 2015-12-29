@@ -19,8 +19,8 @@ enum A {
 }
 
 message B {
-	optional int32 name1 = 1 [default = 0];
-	required int64 name2 = 2;
+	optional int32 name1 = 1 [default = 2147483647];
+	optional A name2 = 2 [default= CASE1];
 	
 	oneof name3 {
 		int32 name4 = 3;

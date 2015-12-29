@@ -3,10 +3,15 @@
 	are base on the path from the root message to the nested ones. 
 *)
 fun hoistName (context) (name) =
-	let val t = List.find (fn (x,_) => x = name orelse String.isPrefix (x^".") name) context
+	let fun test (x) = x = name orelse String.isPrefix (x^".") name
+		fun findTest (MESSAGE(x), _) = test x
+		|	findTest (ENUM(x), _) = test x
+		|	findTest (_, _) = false
+		val t = List.find (findTest) context
 	in
 		case t of
-			SOME(_,x) => x ^ name
+			SOME(MESSAGE(_),x) => MESSAGE(x ^ name)
+		|	SOME(ENUM(_), x) => ENUM(x ^ name)
 		|           _ => raise SyntaxError("Unknown type " ^ name)
 	end;
 	
@@ -24,19 +29,19 @@ fun hoistMessage (answer) (prefix) (context) ((name, fieldList)) =
 		|	isHoistable(_) = false
 		val stableList = List.filter (not o isHoistable) fieldList
 		fun hoistOneOf (c) ([]) = []
-		|	hoistOneOf (c) ((OTHER(w), n, i)::xs) = (OTHER(hoistName c w), n, i) :: (hoistOneOf c (xs))
+		|	hoistOneOf (c) ((OTHER(w), n, i)::xs) = (hoistName c w, n, i) :: (hoistOneOf c (xs))
 		|	hoistOneOf (c) ((t, n, i) :: xs) = (t, n, i) :: (hoistOneOf c (xs))
 		fun hoistStable (c) ([]) = []
 		|	hoistStable (c) (Variable(q, OTHER(w), n, i, d) :: xs) =
-				Variable(q, OTHER(hoistName c w), n, i, d) :: (hoistStable (c) (xs))
+				Variable(q, hoistName c w, n, i, d) :: (hoistStable (c) (xs))
 		|	hoistStable (c) (Variable(w) :: xs) = Variable(w) :: (hoistStable c (xs))
 		|	hoistStable (c) (OneOf(name, oneofFieldList) :: xs) = OneOf(name, hoistOneOf c (oneofFieldList)) :: (hoistStable c (xs))
 		|	hoistStable (c) (_::xs) = raise SyntaxError("Unexpected message/enum in variable list")
 		fun iterate (c) ([]) = Message(prefix^name, hoistStable (c) (stableList)) :: answer
 		|	iterate (c) (NestedMessage(n1, l1)::xs) =
-				hoistMessage (iterate ((n1, prefix^name^".")::c) (xs)) (prefix^name^".") (c) (n1, l1)
+				hoistMessage (iterate ((MESSAGE(n1), prefix^name^".")::c) (xs)) (prefix^name^".") (c) (n1, l1)
 		|	iterate (c) (NestedEnum(n1, l1) ::xs) =
-				hoistEnum (iterate ((n1, prefix^name^".")::c) (xs)) (prefix^name^".") (c) (n1, l1)
+				hoistEnum (iterate ((ENUM(n1), prefix^name^".")::c) (xs)) (prefix^name^".") (c) (n1, l1)
 		|	iterate (c) (_::xs) = iterate (c) (xs)
 	in
 		iterate (context) (fieldList)
@@ -49,9 +54,9 @@ and hoistEnum (answer) (prefix) (_) ((name, fieldList)) =
 *)
 and hoistProgram (_) ([]) = []
 |	hoistProgram (c) (Message(name, fieldList) :: xs) = 
-		hoistMessage (hoistProgram ((name, "")::c) (xs)) ("") (c) (name, fieldList)
+		hoistMessage (hoistProgram ((MESSAGE(name), "")::c) (xs)) ("") (c) (name, fieldList)
 |	hoistProgram (c) (Enum(name, fieldList) :: xs) =
-		hoistEnum (hoistProgram ((name, "")::c) (xs)) ("") (c) (name, fieldList)
+		hoistEnum (hoistProgram ((ENUM(name), "")::c) (xs)) ("") (c) (name, fieldList)
 |	hoistProgram (c) (opt::xs) =
 		opt :: (hoistProgram (c) (xs))
 		

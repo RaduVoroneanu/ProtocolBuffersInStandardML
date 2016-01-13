@@ -1,11 +1,10 @@
 signature VARINT = 
 sig
-	val base : int
 	val serialize : int -> Word8.word list
 	val deserialize : Word8.word list -> int * (Word8.word list)
 end
 
-structure Varint:VARINT = 
+structure Varint :> VARINT = 
 struct
 	val base = 128
 	

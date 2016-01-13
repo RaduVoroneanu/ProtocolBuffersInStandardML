@@ -8,7 +8,7 @@ val kLastReserverTag = 19999;
 val kPow32 = 4294967296;
 val kPow64 = 18446744073709551616;
 
-fun isValidEnumTag (x) = x >= 0;
+fun isValidEnumTag (x) = x >= 0 andalso x < kPow32;
 fun isReservedTag (x) = (x >= kFirstReservedTag andalso x <= kLastReserverTag);
 fun isValidMessageTag (x) = (x >= kFirstTag andalso x <= kLastTag andalso not(isReservedTag x));
 fun isValidMessageFieldName ("") = false
@@ -36,9 +36,9 @@ fun isValidUInt64 (s) =
 		NONE => false
 	|	SOME(x) => (x >= 0) andalso (x < kPow64);
 fun isValidBool (s) = isSome (Bool.fromString s);
-fun isValidFixed32 (s) = isValidInt32 (s);
+fun isValidFixed32 (s) = isValidUInt32 (s);
 fun isValidSFixed32 (s) = isValidInt32 (s);
-fun isValidFixed64 (s) = isValidInt64 (s);
+fun isValidFixed64 (s) = isValidUInt64 (s);
 fun isValidSFixed64 (s) = isValidInt64 (s);
 fun isValidString (s) = (String.isPrefix "\"" s) andalso (String.isSuffix "\"" s);
 fun isValidEnum (context) (name, s) =
@@ -107,7 +107,7 @@ fun verifyDefault (_) ([]) = true
 			|	checkDefault (context) (Variable(_, MESSAGE(n), _, _, SOME(x))::xs) = raise SyntaxError ("Optional messages fields should not have default values " ^ name)
 			|	checkDefault (context) (Variable(_, ENUM(n), _, _, SOME(x))::xs) = 
 					if (isValidEnum context (n, x)) then (checkDefault (context) (xs))
-					else raise SyntaxError("Invalid default enum value for " ^ name ^ " in " ^ name)
+					else raise SyntaxError("Invalid default enum value in " ^ name)
 			|	checkDefault (context) (Variable(_, INT32, _, _, SOME(x))::xs) = 
 					if (isValidInt32 x) then (checkDefault (context) (xs))
 					else raise SyntaxError("Invalid default int32 value in " ^ name)

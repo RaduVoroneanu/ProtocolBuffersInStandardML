@@ -6,7 +6,14 @@ end;
 structure TC32 = struct val size = 32 end;
 structure TC64 = struct val size = 64 end;
 
-functor TWO_COMPLEMENT (t : TWO_COMPLEMENT_SIZE) =
+signature TWO_COMPLEMENT =
+sig
+	val base : int
+	val encode : int -> int
+	val decode : int -> int
+end;
+
+functor TWO_COMPLEMENT (t : TWO_COMPLEMENT_SIZE) :> TWO_COMPLEMENT =
 struct
 	
 	val size = t.size
@@ -17,17 +24,13 @@ struct
 	val base = power 1 (2, size)
 	
 	fun encode (x) = 
-		if (2 * x < ~base) orelse (2 * x >= base) then raise SerializationError("Incorrect two complement structure used when encoding")
-		else 
-			if x > 0 then x
-			else base + x
+		if x > 0 then x
+		else base + x
 	
 	fun decode (x) = 
-		if (x < 0) orelse (x >= base) then raise SerializationError("Incorrect two complement structure used when decoding")
-		else
-			if 2 * x < base then x
-			else x - base
-end;
+		if 2 * x < base then x
+		else x - base
+end
 
 structure TwoComplement32 = TWO_COMPLEMENT(TC32);
 

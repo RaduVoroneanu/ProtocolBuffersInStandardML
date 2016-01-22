@@ -15,9 +15,15 @@ use "Fixed.sml";
 use "Lens.sml";
 use "Proto.sml";
 use "Defaults.sml";
+use "Transpiler.sml";
+
+(*
 
 val result = import "../Examples/example5.proto"
 val result = hoist result
 val result = verify result;
 
 use "../Examples/example5_codelength.sml";
+*)
+
+Transpiler.generate ("../Examples/example0.proto", "gen.sml");

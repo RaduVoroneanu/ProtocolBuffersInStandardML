@@ -1,0 +1,56 @@
+import "example5.proto";
+
+option optimize_for = SPEED;
+
+message MainMessage2 {
+
+	// comment for nested enum
+	enum NestedEnum {
+		CASE0 = 0;
+		CASE1 = 1;
+		CASE2 = 2;
+	}
+	
+	// comment for nested message
+	message NestedMessage {
+		optional int32 field1 = 1 [default = 1];
+		required int64 field2 = 2;
+		optional uint32 field3 = 3;
+		required uint64 field4 = 4;
+		optional sint32 field5 = 5;
+		required sint64 field6 = 6;
+		optional bool field7 = 7 [default = true];
+		optional NestedEnum field8 = 8 [default = CASE2];
+		optional fixed32 field9 = 9;
+		required fixed64 field10 = 10;
+		optional sfixed32 field11 = 11;
+		required sfixed64 field12 = 12;
+		optional string field13 = 13;
+	}
+	
+	message NestedMessage2 {
+		repeated int32 field1 = 1;
+		repeated int64 field2 = 2;
+		repeated uint32 field3 = 3;
+		repeated uint64 field4 = 4;
+		repeated sint32 field5 = 5;
+		repeated sint64 field6 = 6;
+		repeated bool field7 = 7;
+		repeated NestedEnum field8 = 8;
+		repeated fixed32 field9 = 9;
+		repeated fixed64 field10 = 10;
+		repeated sfixed32 field11 = 11;
+		repeated sfixed64 field12 = 12;
+		repeated string field13 = 13;
+	}
+	
+	oneof NestedOneOf {
+		int32 field1 = 1;
+		NestedEnum field2 = 2;
+		NestedMessage field3 = 3;
+	}
+	
+	optional NestedMessage field4 = 4;
+	
+	repeated NestedMessage2 field5 = 5;
+}

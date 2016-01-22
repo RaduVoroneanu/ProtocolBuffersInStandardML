@@ -1,0 +1,6 @@
+option optimize_for = CODE_SIZE;
+
+message Person {
+	optional string name = 1;
+	optional string email = 2;
+}

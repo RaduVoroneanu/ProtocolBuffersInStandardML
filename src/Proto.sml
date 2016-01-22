@@ -260,7 +260,7 @@ sig
 	val proto_repeated_setnth_message : int -> int -> protoType -> protoType -> protoType
 	(* Repeated Embedded Message fields ------------------------------------*)
 
-	(* Oneofs clear function*)
+	(* Oneofs function*)
 	val proto_oneof_clear : int list -> protoType -> protoType
 	val proto_oneof_case : int list -> protoType -> int option
 	
@@ -802,62 +802,62 @@ struct
 		
 	(* Repeated sfixed32 field *)
 	fun proto_repeated_size_sfixed32 (tag) (proto) = 
-		case List.find (equalsTag (tag) && isPRInt) (proto) of
-			SOME (_, PRInt l) => List.length l
+		case List.find (equalsTag (tag) && isPRFixed32) (proto) of
+			SOME (_, PRFixed32 l) => List.length l
 		|	_ => 0
 	fun proto_repeated_get_sfixed32 (tag) (proto) =
-		case List.find (equalsTag (tag) && isPRInt) proto of
-			SOME(_, PRInt value) => List.map (ZigZag.decode) value
+		case List.find (equalsTag (tag) && isPRFixed32) proto of
+			SOME(_, PRFixed32 value) => List.map (ZigZag.decode) value
 		|	_ => []
 	fun proto_repeated_set_sfixed32 (tag) (value) (proto) = 
-		if List.all (Limits.isValidsfixed32) value then proto_set (tag, PRInt (List.map (ZigZag.encode) value)) proto
+		if List.all (Limits.isValidsfixed32) value then proto_set (tag, PRFixed32 (List.map (ZigZag.encode) value)) proto
 												else raise InvalidSet("Values in list are not all sfixed32")
 	fun proto_repeated_add_sfixed32 (tag) (value) (proto) =
 		if Limits.isValidsfixed32 value then
-			case List.find (equalsTag (tag) && isPRInt) proto of
-				SOME (_, PRInt l) => proto_set (tag, PRInt (l @ [ZigZag.encode value])) proto
-			|	_ => proto_set (tag, PRInt [ZigZag.encode value]) proto
+			case List.find (equalsTag (tag) && isPRFixed32) proto of
+				SOME (_, PRFixed32 l) => proto_set (tag, PRFixed32 (l @ [ZigZag.encode value])) proto
+			|	_ => proto_set (tag, PRFixed32 [ZigZag.encode value]) proto
 		else raise InvalidSet("Value being added is not sfixed32")
 	fun proto_repeated_clear_sfixed32 (tag) (proto) = proto_clear (tag) proto
 	fun proto_repeated_getnth_sfixed32 (tag) (position) (proto) = 
-		case List.find (equalsTag (tag) && isPRInt) proto of
-			SOME (_, PRInt value) => ZigZag.decode (List.nth (value, position))
+		case List.find (equalsTag (tag) && isPRFixed32) proto of
+			SOME (_, PRFixed32 value) => ZigZag.decode (List.nth (value, position))
 		|	_	=> raise Subscript
 	fun proto_repeated_setnth_sfixed32 (tag) (position) (value) (proto) =
 		if Limits.isValidsfixed32 value then
-			case List.find (equalsTag (tag) && isPRInt) proto of
-				SOME(_, PRInt l) => proto_set (tag, PRInt (list_set_position (position, ZigZag.encode value) l)) proto
+			case List.find (equalsTag (tag) && isPRFixed32) proto of
+				SOME(_, PRFixed32 l) => proto_set (tag, PRFixed32 (list_set_position (position, ZigZag.encode value) l)) proto
 			|	_ => raise Subscript
 		else raise InvalidSet("Value is not sfixed32")
 		
 	
 	(* Repeated sfixed64 field *)
 	fun proto_repeated_size_sfixed64 (tag) (proto) = 
-		case List.find (equalsTag (tag) && isPRInt) (proto) of
-			SOME (_, PRInt l) => List.length l
+		case List.find (equalsTag (tag) && isPRFixed64) (proto) of
+			SOME (_, PRFixed64 l) => List.length l
 		|	_ => 0
 	fun proto_repeated_get_sfixed64 (tag) (proto) =
-		case List.find (equalsTag (tag) && isPRInt) proto of
-			SOME(_, PRInt value) => List.map (ZigZag.decode) value
+		case List.find (equalsTag (tag) && isPRFixed64) proto of
+			SOME(_, PRFixed64 value) => List.map (ZigZag.decode) value
 		|	_ => []
 	fun proto_repeated_set_sfixed64 (tag) (value) (proto) = 
-		if List.all (Limits.isValidsfixed64) value then proto_set (tag, PRInt (List.map (ZigZag.encode) value)) proto
+		if List.all (Limits.isValidsfixed64) value then proto_set (tag, PRFixed64 (List.map (ZigZag.encode) value)) proto
 												else raise InvalidSet("Values in list are not all sfixed64")
 	fun proto_repeated_add_sfixed64 (tag) (value) (proto) =
 		if Limits.isValidsfixed64 value then
-			case List.find (equalsTag (tag) && isPRInt) proto of
-				SOME (_, PRInt l) => proto_set (tag, PRInt (l @ [ZigZag.encode value])) proto
-			|	_ => proto_set (tag, PRInt [ZigZag.encode value]) proto
+			case List.find (equalsTag (tag) && isPRFixed64) proto of
+				SOME (_, PRFixed64 l) => proto_set (tag, PRFixed64 (l @ [ZigZag.encode value])) proto
+			|	_ => proto_set (tag, PRFixed64 [ZigZag.encode value]) proto
 		else raise InvalidSet("Value being added is not sfixed64")
 	fun proto_repeated_clear_sfixed64 (tag) (proto) = proto_clear (tag) proto
 	fun proto_repeated_getnth_sfixed64 (tag) (position) (proto) = 
-		case List.find (equalsTag (tag) && isPRInt) proto of
-			SOME (_, PRInt value) => ZigZag.decode (List.nth (value, position))
+		case List.find (equalsTag (tag) && isPRFixed64) proto of
+			SOME (_, PRFixed64 value) => ZigZag.decode (List.nth (value, position))
 		|	_	=> raise Subscript
 	fun proto_repeated_setnth_sfixed64 (tag) (position) (value) (proto) =
 		if Limits.isValidsfixed64 value then
-			case List.find (equalsTag (tag) && isPRInt) proto of
-				SOME(_, PRInt l) => proto_set (tag, PRInt (list_set_position (position, ZigZag.encode value) l)) proto
+			case List.find (equalsTag (tag) && isPRFixed64) proto of
+				SOME(_, PRFixed64 l) => proto_set (tag, PRFixed64 (list_set_position (position, ZigZag.encode value) l)) proto
 			|	_ => raise Subscript
 		else raise InvalidSet("Value is not sfixed64")
 		

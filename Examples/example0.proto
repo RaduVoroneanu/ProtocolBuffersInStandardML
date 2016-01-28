@@ -1,6 +1,12 @@
-option optimize_for = CODE_SIZE;
+message Request {
+	required string name = 1;
+}
 
-message Person {
-	optional string name = 1;
-	optional string email = 2;
+message Response {
+	required string text = 1;
+}
+
+service Talk {
+	rpc Greet (Request) returns (Response);
+	rpc Bye (Request) returns (Response);
 }

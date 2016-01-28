@@ -17,6 +17,9 @@ fun isValidMessageName ("") = false
 |	isValidMessageName (x) = Char.isAlpha(String.sub (x,0)) andalso (List.all (fn x => (Char.isAlphaNum x) orelse (x = #".")) (String.explode x));
 fun isValidEnumFieldName (s) = isValidMessageFieldName s;
 fun isValidEnumName (s) = isValidMessageName s;
+fun isValidServiceName (x) = Char.isAlpha(String.sub (x, 0)) andalso (List.all (Char.isAlphaNum) (String.explode x));
+fun isValidRPCName (x) = isValidServiceName x
+
 fun isValidInt32 (s) = 
 	case Int.fromString s of	
 		NONE => false
@@ -85,6 +88,8 @@ fun verifyProgram (_) ([]) = true
 	let val tags = List.map (fn (_, i) => i) fieldList
 		val names = List.map (fn (n, _) => n) fieldList
 	in
+		if List.length fieldList = 0 then raise SyntaxError("Empty enum " ^ name)
+		else
 		if List.exists (fn x => x = name) context then raise SyntaxError("Duplicate name " ^ name)
 		else
 		if not(isValidEnumName(name)) then raise SyntaxError("Invalid enum name " ^ name)
@@ -97,6 +102,25 @@ fun verifyProgram (_) ([]) = true
 		else
 		if List.exists (fn x => countAppearance names x <> 1) names then raise SyntaxError("Duplicate name in enum " ^ name)
 		else verifyProgram (name::context) (xs)
+	end
+|	verifyProgram (context) (Service (name, rpcs) :: xs) =
+	let val names = List.map (fn (n, _, _) => n) rpcs
+		val requests = List.map (fn (_, r, _) => r) rpcs
+		val responses = List.map (fn (_, _, r) => r) rpcs
+	in
+		if List.exists (fn x => x = name) context then raise SyntaxError("Duplicate name " ^ name)
+		else
+		if not(isValidServiceName name) then raise SyntaxError("Invalid service name " ^ name)
+		else
+		if List.exists (not o isValidRPCName) names then raise SyntaxError("Invalid rpc name in " ^ name)
+		else
+		if List.exists (fn x => countAppearance context x <> 1) requests then raise SyntaxError("Unknown request in service " ^ name)
+		else
+		if List.exists (fn x => countAppearance context x <> 1) responses then raise SyntaxError("Unknown response in service " ^ name)
+		else
+		if List.exists (fn x => countAppearance names x <> 1) names then raise SyntaxError("Duplicate rpc in service " ^ name)
+		else 
+		verifyProgram (name::context) (xs)
 	end
 |	verifyProgram (context) (_::xs) = verifyProgram (context) (xs);
 	

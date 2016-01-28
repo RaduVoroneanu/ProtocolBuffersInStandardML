@@ -148,19 +148,22 @@ struct
 		end
 end;
 
+val ip = "10.249.90.215";
+val port = 12222;
+
 signature TALK_CLIENT = 
 sig
 	type stub
 	val createStub : (string * int) -> stub
 	val Greet : stub -> Request.t -> Response.t
-	val Bye : stub -> Request.t -> Response.t
 end;
 
 functor TalkClientFunctor (channel : CHANNEL_CLIENT) :> TALK_CLIENT = 
 struct
 	type stub = string * int
+	
 	fun createStub (v) = v
-
+	
 	fun Greet ((ip, port)) (req) = 
 		let val c = channel.connect (ip, port)
 			val ser = Request.serialize req
@@ -170,26 +173,16 @@ struct
 		in
 			Response.deserialize res
 		end
-	fun Bye ((ip, port)) (req) = 
-		let val c = channel.connect (ip, port)
-			val ser = Request.serialize req
-			val _ = channel.send c ("Bye", ser)
-			val ("Bye", res) = channel.recv c ()
-			val _ = channel.close c
-		in
-			Response.deserialize res
-		end
 end;
 
 signature TALK_IMPL =
 sig
 	val Greet : Request.t -> Response.t
-	val Bye : Request.t -> Response.t
 end;
 
 signature TALK_SERVER =
 sig
-	val start : int -> unit
+	val start : int -> unit 
 end;
 
 functor TalkServerFunctor (Arg: sig
@@ -197,9 +190,10 @@ functor TalkServerFunctor (Arg: sig
 								structure impl : TALK_IMPL
 							end) :> TALK_SERVER =
 struct
+	
 	structure channel = Arg.channel
 	structure impl = Arg.impl
-
+	
 	fun start (port) =
 		let val listener = channel.start(port)
 			fun accept () = 
@@ -213,9 +207,19 @@ struct
 			and solve (name, ser) = 
 					case name of 
 						"Greet" => Response.serialize (impl.Greet (Request.deserialize ser))
-					|	"Bye" => Response.serialize (impl.Bye (Request.deserialize ser))
 		in
 			accept ()
 		end
 end;
 
+structure TalkImpl :> TALK_IMPL =
+struct
+	fun Greet (req) =  Response.set_text ("Hello " ^ (Request.get_name req) ^ " very glad to meet you") Response.new
+	fun Bye (req) = Response.set_text ("ByeBye " ^ (Request.get_name req) ) Response.new
+end;
+
+structure TalkClient = TalkClientFunctor(ChannelClient);
+structure TalkServer = TalkServerFunctor(struct
+											structure channel = ChannelServer
+											structure impl = TalkImpl
+										end);

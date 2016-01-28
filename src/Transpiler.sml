@@ -229,11 +229,11 @@ struct
 					"\tval set_" ^ n ^ " : " ^ (toSMLType t) ^ " -> t -> t\n" ^
 					"\tval clear_" ^ n ^ " : t -> t\n" ^
 					"\tval lens_" ^ n ^ " : (t, " ^ (toSMLType t) ^ ") Lens\n"
-			|	f (OneOf(_, c)) =
-					"\tdatatype typeNestedOneOf = NOT_SET | " ^
+			|	f (OneOf(nn, c)) =
+					"\tdatatype type" ^ nn ^ " = NOT_SET | " ^
 					(separate (" | ") (List.map (fn (_, n, _) => "k" ^ n) c)) ^ "\n" ^
-					"\tval case_NestedOneOf : t -> typeNestedOneOf\n" ^
-					"\tval clear_NestedOneOf : t -> t\n\n" ^
+					"\tval case_" ^ nn ^ " : t -> type" ^ nn ^ "\n" ^
+					"\tval clear_" ^ nn ^ " : t -> t\n\n" ^
 					(messageSpeedSigAccessor (List.map (fn (t, n, i) => Variable(OPTIONAL, t, n, i, NONE)) c))
 		in
 			separate ("\n") (List.map f cases)
@@ -345,11 +345,11 @@ struct
 						"\tval lens_" ^ n ^ " = { get = get_" ^ n ^ ", set = set_" ^ n ^ " }\n"
 			|	f (_) (OneOf (n, c)) =
 					"\tdatatype type" ^ n ^ " = NOT_SET | " ^ (separate (" | ") (List.map (fn (_, n, _) => "k" ^ n) c)) ^ "\n" ^
-					"\tfun case_NestedOneOf (t) = \n" ^
+					"\tfun case_" ^ n ^ " (t) = \n" ^
 					"\t\tcase #" ^ (toUpper n) ^ " t of\n\t\t" ^
 					(separate ("\n\t\t|") (List.map (fn (_, n, _) => "\tSOME(" ^ (toUpper n) ^ " _) => k" ^ n) c)) ^ "\n" ^
 					"\t\t|\t_ => NOT_SET\n" ^ 
-					"\tfun clear_NestedOneOf (t) = " ^
+					"\tfun clear_" ^ n ^ " (t) = " ^
 					newRecord fields n (toUpper n ^ " = NONE") ^ "\n\n" ^
 					separate ("\n") (List.map (fn (t, nn, i) => f (n) (Variable(OPTIONAL, t, nn, i, NONE))) c)
 			|	f (_) (_) = "HELLO\n"
@@ -466,11 +466,76 @@ struct
 			"\t\tend\n" ^
 			"end;"
 		
+	fun generateClientSig (n, req, res) = "\tval " ^ n ^ " : stub -> " ^ (replace (#".", #"_") req) ^ ".t -> " ^ (replace (#".", #"_") res) ^ ".t"
+	
+	fun generateClientFunctor (n, req, res) =
+		"\tfun " ^ n ^ " ((ip, port)) (req) = \n" ^
+		"\t\tlet val c = channel.connect (ip, port)\n" ^
+		"\t\t\tval ser = " ^ (replace (#".", #"_") req) ^ ".serialize req\n" ^
+		"\t\t\tval _ = channel.send c (\"" ^ n ^ "\", ser)\n" ^
+		"\t\t\tval (\"" ^ n ^ "\", res) = channel.recv c ()\n" ^
+		"\t\t\tval _ = channel.close c\n" ^
+		"\t\tin\n" ^
+		"\t\t\t" ^ (replace (#".", #"_") res) ^ ".deserialize res\n" ^
+		"\t\tend"
+		
+	fun generateServerImpl(n, req, res) = "\tval " ^ n ^ " : " ^ (replace (#".", #"_") req) ^ ".t -> " ^ (replace (#".", #"_") res) ^ ".t"
+	
+	fun generateServerFunctor(n, req, res) = "\"" ^ n ^ "\" => " ^ (replace (#".", #"_") res) ^ ".serialize (impl." ^ n ^ " (" ^ (replace (#".", #"_") req) ^ ".deserialize ser))"
+	
+	fun generateService (name, cases) = 
+		"signature " ^ (toUpper name) ^ "_CLIENT = \n" ^
+		"sig\n" ^
+		"\ttype stub\n" ^
+		"\tval createStub : (string * int) -> stub\n" ^
+		(separate "\n" (List.map generateClientSig cases)) ^ "\n" ^
+		"end;\n\n" ^
+		"functor " ^ name ^ "ClientFunctor (channel : CHANNEL_CLIENT) :> " ^ (toUpper name) ^ "_CLIENT = \n" ^
+		"struct\n" ^
+		"\ttype stub = string * int\n" ^
+		"\tfun createStub (v) = v\n\n" ^
+		(separate "\n" (List.map generateClientFunctor cases)) ^ "\n" ^
+		"end;\n\n" ^
+		"signature " ^ (toUpper name) ^ "_IMPL =\n" ^
+		"sig\n" ^
+		(separate "\n" (List.map generateServerImpl cases)) ^ "\n" ^
+		"end;\n\n" ^
+		"signature " ^ (toUpper name) ^ "_SERVER =\n" ^
+		"sig\n" ^
+		"\tval start : int -> unit\n" ^
+		"end;\n\n" ^
+		"functor " ^ name ^ "ServerFunctor (Arg: sig\n" ^
+		"\t\t\t\t\t\t\t\tstructure channel : CHANNEL_SERVER \n" ^
+		"\t\t\t\t\t\t\t\tstructure impl : " ^ (toUpper name) ^ "_IMPL\n" ^
+		"\t\t\t\t\t\t\tend) :> " ^ (toUpper name) ^ "_SERVER =\n" ^
+		"struct\n" ^
+		"\tstructure channel = Arg.channel\n" ^
+		"\tstructure impl = Arg.impl\n\n" ^
+		"\tfun start (port) =\n" ^
+		"\t\tlet val listener = channel.start(port)\n" ^
+		"\t\t\tfun accept () = \n" ^
+		"\t\t\t\tlet val conn = channel.accept listener\n" ^
+		"\t\t\t\t\tval (name, ser) = channel.recv conn ()\n" ^
+		"\t\t\t\tin\n" ^
+		"\t\t\t\t\tchannel.send conn (name, solve(name, ser));\n" ^
+		"\t\t\t\t\tchannel.close conn;\n" ^
+		"\t\t\t\t\taccept()\n" ^
+		"\t\t\t\tend\n" ^
+		"\t\t\tand solve (name, ser) = \n" ^
+		"\t\t\t\t\tcase name of \n" ^
+		"\t\t\t\t\t\t" ^ (separate "\n\t\t\t\t\t|\t" (List.map generateServerFunctor cases)) ^ "\n" ^
+		"\t\tin\n" ^
+		"\t\t\taccept ()\n" ^
+		"\t\tend\n" ^
+		"end;"
+		
 	fun generateHelp (_) (_) ([]) = ""
 	|	generateHelp (_) (context) (Option CODE_SIZE :: xs) = generateHelp (false) context xs
 	|	generateHelp (_) (context) (Option SPEED :: xs) = generateHelp (true) context xs
 	|	generateHelp (opt) (context) (Enum (name, cases) :: xs) = 
 			generateEnum (name, cases) ^ ("\n\n") ^ (generateHelp opt context xs)
+	|	generateHelp (opt) (context) (Service (name, cases) :: xs) = 
+			generateService (name, cases) ^ ("\n\n") ^ (generateHelp opt context xs)
 	|	generateHelp (opt) (context) (Message (name, cases) :: xs) = 
 			if opt then generateMessageSpeed (name, cases) ^ ("\n\n") ^ (generateHelp opt context xs)
 			else generateMessageSize (context) (name, cases) ^ ("\n\n") ^ (generateHelp opt (name::context) xs)

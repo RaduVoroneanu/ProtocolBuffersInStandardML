@@ -1,7 +1,7 @@
 structure ProtoKeyword : KEYWORD = 
 struct
-	val alphas = ["message", "enum", "option", "optional", "required", "repeated", "int32", "int64", "uint32", "uint64", "sint32", "sint64", "bool", "fixed64", "sfixed64", "string", "fixed32", "sfixed32", "optimize_for", "import", "oneof", "default"];
-	val symbols = ["{", "}", ";", "=", "[", "]"];
+	val alphas = ["message", "enum", "option", "optional", "required", "repeated", "int32", "int64", "uint32", "uint64", "sint32", "sint64", "bool", "fixed64", "sfixed64", "string", "fixed32", "sfixed32", "optimize_for", "import", "oneof", "default", "service", "rpc", "returns"];
+	val symbols = ["{", "}", ";", "=", "[", "]", "(", ")"];
 end;
 
 structure ProtoLexer : LEXER = Lexer (ProtoKeyword);
@@ -25,7 +25,8 @@ datatype messageField = NestedMessage of (string * (messageField list)) |
 and		 programField = Message of (string * (messageField list)) |
 						Enum of (string * (enumField list)) |
 						Option of optimization |
-						Import of string
+						Import of string |
+						Service of string * ((string * string * string) list)
 						
 type message = string * (messageField list)
 type enum = string * (enumField list)
@@ -62,6 +63,7 @@ fun variableTypeConstruct (y) =
 fun variableConstruct4 (((x,y),z), t) = (x, y, z, t, NONE);
 fun variableConstruct5 ((((x, y), z), t), w) = (x, y, z, t, w);
 fun oneofConstruct ((x, y), z) = (x, y, z);
+fun rpcContruct ((x, y), z) = (x, y, z);
 	
 fun optimizationConstruct (x) =
 	case x of
@@ -78,11 +80,13 @@ and variableParser (x) = (
 							|| 
 							(( (($"optional") >> variableQuantifierConstruct) -- variableTypeParser -- id --! $"=" -- (id >> stringToInt) --! $"[" --! $"default" --! $"=" -- (id >> SOME) --! $"]" --! $";") >> variableConstruct5) 
 						) x
+and rpcParser (x) = (($"rpc" !-- id --! $"(" -- id --! $")" --! $"returns" --! $"(" -- id --! $")" --! $";") >> rpcContruct ) x
 and messageParser (x) = ($"message" !-- id --! $"{" -- (repeat messageFieldParser) --! $"}") x
 and enumParser (x) = ($"enum" !-- id --! $"{" -- (repeat enumFieldParser) --! $"}") x
 and oneofParser (x) = ($"oneof" !-- id --! $"{" -- (repeat oneofFieldParser) --! $"}") x
+and serviceParser (x) = ($"service" !-- id --! $"{" -- (repeat rpcParser) --! $"}") x
 and programParser (x) = (repeat programFieldParser) x
 and messageFieldParser (x) = ((messageParser >> NestedMessage) || (enumParser >> NestedEnum) || (variableParser >> Variable) || (oneofParser >> OneOf)) x
 and enumFieldParser (x) = (id --! $"=" -- (id >> stringToInt) --! $";") x
 and oneofFieldParser (x) = ((variableTypeParser -- id --! $"=" -- (id >> stringToInt) --! $";") >> oneofConstruct) x
-and programFieldParser (x) = ((messageParser >> Message) || (enumParser >> Enum) || (optimizationParser >> Option) || (importParser >> Import)) x;
+and programFieldParser (x) = ((messageParser >> Message) || (enumParser >> Enum) || (optimizationParser >> Option) || (importParser >> Import) || (serviceParser >> Service)) x;

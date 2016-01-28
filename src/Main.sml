@@ -16,7 +16,8 @@ use "Lens.sml";
 use "Proto.sml";
 use "Defaults.sml";
 use "Transpiler.sml";
-
+use "ChannelSignature.sml";
+use "Channel.sml";
 (*
 
 val result = import "../Examples/example5.proto"
